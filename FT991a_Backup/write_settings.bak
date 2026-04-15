@@ -1,0 +1,57 @@
+import serial
+import time
+import glob
+import os
+
+# Configuration
+PORT = "COM5"
+BAUD = 38400
+DELAY = 0.1  # 100ms delay
+PATTERN = "Setting_*.txt"
+
+def send_file_over_serial():
+    # 1) Find local files in same directory
+    files = glob.glob(PATTERN)
+    
+    if not files:
+        print(f"No files matching {PATTERN} found in the current directory.")
+        return
+
+    print("Available files:")
+    for index, filename in enumerate(files, 1):
+        print(f"{index}- {filename}")
+
+    # 2) User enters the index
+    try:
+        choice = int(input("\nEnter the index number of the file to open: "))
+        if not (1 <= choice <= len(files)):
+            print("Invalid index.")
+            return
+        
+        selected_file = files[choice - 1]
+    except ValueError:
+        print("Please enter a valid number.")
+        return
+
+    # 3) Open port and send contents line by line
+    try:
+        with serial.Serial(PORT, BAUD, timeout=1) as ser:
+            print(f"Opening {selected_file} and sending to {PORT}...")
+            
+            with open(selected_file, "r") as f:
+                for line in f:
+                    # Strip whitespace and send with terminator if needed
+                    data = line.strip() + "\n"
+                    ser.write(data.encode('ascii'))
+                    print(data.encode('ascii'))
+                    # 100ms delay between lines
+                    time.sleep(DELAY)
+                    
+            print(f"Finished sending {selected_file}.")
+    except serial.SerialException as e:
+        print(f"Serial Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    send_file_over_serial()

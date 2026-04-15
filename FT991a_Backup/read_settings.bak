@@ -1,0 +1,46 @@
+import serial
+import time
+from datetime import datetime
+
+# Configuration
+PORT = "COM5"
+BAUD = 38400
+TIMEOUT = 1.0  # Read timeout in seconds
+DATE_STR = datetime.now().strftime("%y%m%d")
+FILENAME = f"Setting_{DATE_STR}.txt"
+
+def run_serial_sequence():
+    try:
+        # 1) Opens COM5 at 38400
+        with serial.Serial(PORT, BAUD, timeout=TIMEOUT) as ser:
+            print(f"Connected to {PORT}. Writing to {FILENAME}...")
+            
+            with open(FILENAME, "w") as f:
+                # 2) Sequence from 001 to 154
+                for i in range(1, 155):
+                    command = f"EX{i:03d};"
+                    print(command)
+                    ser.write(command.encode('ascii'))
+
+                    # 3) Wait 100ms
+                    time.sleep(0.1)
+                    
+                    # Read back the response until the terminator ";"
+                    response = ser.read_until(b";").decode('ascii').strip()
+                    
+                    # 4) Save to file
+                    if response:
+                        f.write(f"{response}\n")
+                        print(f"Sent: {command} | Received: {response}")
+                    else:
+                        print(f"Sent: {command} | No response received.")
+
+        print("Sequence complete.")
+
+    except serial.SerialException as e:
+        print(f"Serial Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    run_serial_sequence()
